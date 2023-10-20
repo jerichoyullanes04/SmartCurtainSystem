@@ -51,6 +51,7 @@ unsigned long lastDebounceTime = 0;
 bool buttonState = HIGH;
 bool lastButtonState = HIGH;
 BluetoothSerial SerialBT;
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
 void setup() {
   // put your setup code here, to run once:
 
@@ -90,7 +91,7 @@ void setup() {
 
   Serial.begin(921600); // Enable serial and sets baud rate to 115200
 }
-
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
 void loop() {
    char message;
   // put your main code here, to run repeatedly:
@@ -158,11 +159,11 @@ void loop() {
     }
   }
 }
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
 // MANUAL OPERATION FUNCTIONS
 void openCurtainButton () {
   openCurtain();
 }
-
 void closeCurtainButton () {
   closeCurtain();
 }
