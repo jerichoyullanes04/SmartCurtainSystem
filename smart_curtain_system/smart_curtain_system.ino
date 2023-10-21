@@ -100,9 +100,20 @@ void loop() {
   if (SerialBT.available()) {
     Serial.write(SerialBT.read());
   }
+  delay(20);
 
- delay(20);
-  // SETUP
+  //read and stores the Light Resistance value, then prints it
+  LDRValue = analogRead(LDRPin);
+  Serial.print("Light Resistance: "); Serial.println(LDRValue);
+
+  Serial.println("\n");
+
+  // read and stores temperature and humidity value, then prints it
+  int checkDht11Value = DHT11.read(DHT11PIN);
+  Serial.print("Humidity (%): "); Serial.println((float)DHT11.humidity, 2);
+  Serial.print("Temperature  (C): "); Serial.println((float)DHT11.temperature, 2);
+
+  /* SETUP of Manual|Automatic Switch */
   int reading = digitalRead(switchButtonPin);
   if (reading != lastButtonState) {
   lastDebounceTime = millis();
@@ -114,20 +125,24 @@ void loop() {
         // Button was pressed
         if (currentMode == MANUAL) {
           currentMode = AUTOMATIC;
+          // Perform your automatic mode actions here
           digitalWrite(automaticLED, HIGH); // Turn on the LED to indicate automatic mode
           digitalWrite(manualLED, LOW); // Turn off the LED to indicate manual mode
-          // Perform your automatic mode actions here
+          Serial.println("Set to Automatic Mode");
+          
         } else {
           currentMode = MANUAL;
+          // Perform your manual mode actions here
           digitalWrite(manualLED, HIGH); // Turn off the LED to indicate manual mode
           digitalWrite(automaticLED, LOW); // Turn on the LED to indicate automatic mode
-          // Perform your manual mode actions here
+          Serial.println("Set to Manual Mode");
         }
       }
     }
   }
   lastButtonState = reading;
-  // LOOP
+
+  /* LOOP of Manual|Automatic Switch */
   // Your code for MANUAL and AUTOMATIC modes goes here
   if (currentMode == MANUAL) {
     // Code for MANUAL mode
@@ -149,10 +164,6 @@ void loop() {
     
   } else {
     // Code for AUTOMATIC mode
-    //read and stores the Light Resistance value, then prints it
-    LDRValue = analogRead(LDRPin);
-    // read and stores temperature and humidity value, then prints it
-    Serial.println("\n");
     int checkDht11Value = DHT11.read(DHT11PIN);
     if(LDRValue > 3000) { 
       openCurtain();
