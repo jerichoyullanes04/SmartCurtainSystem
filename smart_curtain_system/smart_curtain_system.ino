@@ -147,19 +147,19 @@ void loop() {
   if (currentMode == MANUAL) {
     // Code for MANUAL mode
 
-    // Handle the Open Button
-    if (openButton.isIdle()) {
+   
+    if (openButton.isIdle()) {  // Handle the Open Button
       openCurtain();
     }else if (closeButton.isIdle()) { // Handle the Close Button
       closeCurtain();
     }else {
-      Serial.println("Motor stopped");
+      Serial.println("Motor stopped"); 
       digitalWrite(motor1Pin1, LOW);
       digitalWrite(motor1Pin2, LOW);
       ledcWrite(pwmChannel, 0);  // Turn off PWM
     }
 
-    openButton.tick();
+    openButton.tick(); 
     closeButton.tick();
     
   } else {
