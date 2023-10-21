@@ -4,9 +4,6 @@
 const int LDRPin = 32; 
 int LDRValue;
 
-// LED CODE
-const int led = 2; // Set LED to Digital Pin 13
-
 // DHT11 CODE (Temperature and Humidity Sensor)
 #include <dht11.h> // Include the dht11 library
 const int DHT11PIN = 33; // Set DHT11 to Analog Pin 1
@@ -21,6 +18,8 @@ int enable1Pin = 4; // Replace with the GPIO pin number connected to ENA
 const int freq = 30000;
 const int pwmChannel = 0;
 const int resolution = 8;
+// Define a variable to track the motor state
+bool motorRunning = false;
 
 // (HC-SR04 MODULE) ULTRASONIC DISTANCE SENSOR CODE 
 int trigPin = 13; // Set Trigger to Digital Pin 6
@@ -43,21 +42,24 @@ OneButton closeButton(26,true);
 
 // Automatic to Manual Switch Button
 const int switchButtonPin = 27;
-const int ledPin = 23;   // Replace with the GPIO pin number connected to your LED
+const int manualLED = 16;   // Replace with the GPIO pin number connected to your LED
+const int automaticLED = 17;   // Replace with the GPIO pin number connected to your LED
 const unsigned long debounceDelay = 50; // Debounce delay (in milliseconds)
 enum Mode { MANUAL, AUTOMATIC };
 Mode currentMode = MANUAL;
 unsigned long lastDebounceTime = 0;
 bool buttonState = HIGH;
 bool lastButtonState = HIGH;
+
 BluetoothSerial SerialBT;
-/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(921600);
 
-  Serial.begin(115200);
   SerialBT.begin("ESP32test"); //Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
+
   // (HC-SR04 MODULE) ULTRASONIC DISTANCE SENSOR CODE 
   pinMode(trigPin, OUTPUT); //sets pin as OUTPUT
   pinMode(echoPin, INPUT); //sets pin as INPUT
@@ -67,8 +69,8 @@ void setup() {
   pinMode(limitSwitch2, INPUT); //set pin as INPUT
 
   // LED Indicator when the System is Turn On
-  pinMode(led, OUTPUT); // onboard LED
-  digitalWrite(led, HIGH); // Switch ON LED in Pin 13
+  pinMode(manualLED, OUTPUT); // onboard LED
+  pinMode(automaticLED, OUTPUT); // onboard LED
 
   pinMode(LDRPin, INPUT); // Set Photoresistor analog pin as INPUT
 
@@ -87,11 +89,8 @@ void setup() {
   ledcAttachPin(enable1Pin, pwmChannel);
 
   pinMode(switchButtonPin, INPUT_PULLUP);
-  pinMode(ledPin, OUTPUT);
-
-  Serial.begin(921600); // Enable serial and sets baud rate to 115200
 }
-/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 void loop() {
    char message;
   // put your main code here, to run repeatedly:
@@ -115,11 +114,13 @@ void loop() {
         // Button was pressed
         if (currentMode == MANUAL) {
           currentMode = AUTOMATIC;
-          digitalWrite(ledPin, HIGH); // Turn on the LED to indicate automatic mode
+          digitalWrite(automaticLED, HIGH); // Turn on the LED to indicate automatic mode
+          digitalWrite(manualLED, LOW); // Turn off the LED to indicate manual mode
           // Perform your automatic mode actions here
         } else {
           currentMode = MANUAL;
-          digitalWrite(ledPin, LOW); // Turn off the LED to indicate manual mode
+          digitalWrite(manualLED, HIGH); // Turn off the LED to indicate manual mode
+          digitalWrite(automaticLED, LOW); // Turn on the LED to indicate automatic mode
           // Perform your manual mode actions here
         }
       }
@@ -130,19 +131,20 @@ void loop() {
   // Your code for MANUAL and AUTOMATIC modes goes here
   if (currentMode == MANUAL) {
     // Code for MANUAL mode
-    digitalWrite(motor1Pin1, LOW);
-    digitalWrite(motor1Pin2, LOW);
-    ledcWrite(pwmChannel, 0);  // Turn off PWM
 
     // Handle the Open Button
     if (openButton.isIdle()) {
       openCurtain();
-    }
-    openButton.tick();
-    // Handle the Close Button
-    if (closeButton.isIdle()) {
+    }else if (closeButton.isIdle()) { // Handle the Close Button
       closeCurtain();
+    }else {
+      Serial.println("Motor stopped");
+      digitalWrite(motor1Pin1, LOW);
+      digitalWrite(motor1Pin2, LOW);
+      ledcWrite(pwmChannel, 0);  // Turn off PWM
     }
+
+    openButton.tick();
     closeButton.tick();
     
   } else {
@@ -159,11 +161,11 @@ void loop() {
     }
   }
 }
-/*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
 // MANUAL OPERATION FUNCTIONS
 void openCurtainButton () {
   openCurtain();
 }
+
 void closeCurtainButton () {
   closeCurtain();
 }
@@ -171,11 +173,13 @@ void closeCurtainButton () {
 void openCurtain () {
     if(digitalRead(limitSwitch1) == LOW && digitalRead(limitSwitch2) == LOW) {
         // Stop the DC motor
+        Serial.println("Motor stopped");
         digitalWrite(motor1Pin1, LOW);
         digitalWrite(motor1Pin2, LOW);
         ledcWrite(pwmChannel, 0);  // Turn off PWM
     } else {
       // Move the DC motor forward at maximum speed
+      Serial.println("Opening Curtain...");
       digitalWrite(motor1Pin1, LOW);
       digitalWrite(motor1Pin2, HIGH); 
       ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
@@ -185,11 +189,13 @@ void closeCurtain () {
     distance = getDistance();  //stores the returned value from the function
     if (distance < 20) {
         // Stop the DC motor
+        Serial.println("Motor stopped");
         digitalWrite(motor1Pin1, LOW);
         digitalWrite(motor1Pin2, LOW);
         ledcWrite(pwmChannel, 0);  // Turn off PWM
     } else {
         // Move DC motor backwards at maximum speed
+        Serial.println("Closing Curtain...");
         digitalWrite(motor1Pin1, HIGH);
         digitalWrite(motor1Pin2, LOW); 
         ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
