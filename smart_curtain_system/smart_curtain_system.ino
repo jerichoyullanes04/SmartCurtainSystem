@@ -1,5 +1,13 @@
 #include <Arduino.h>
-#include "BluetoothSerial.h"
+//#include "BluetoothSerial.h"
+#include <WiFi.h>
+
+// Replace with your network credentials
+const char* ssid     = "Smart Curtain";
+const char* password = "12345678";
+// Set web server port number to 80
+WiFiServer server(80);
+
 
 const int LDRPin = 32; 
 int LDRValue;
@@ -51,14 +59,14 @@ unsigned long lastDebounceTime = 0;
 bool buttonState = HIGH;
 bool lastButtonState = HIGH;
 
-BluetoothSerial SerialBT;
+//BluetoothSerial SerialBT;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(921600);
-
-  SerialBT.begin("ESP32test"); //Bluetooth device name
-  Serial.println("The device started, now you can pair it with bluetooth!");
+/* 
+  SerialBT.begin("Smart Curtain"); //Bluetooth device name
+  Serial.println("The device started, now you can pair it with bluetooth!"); */
 
   // (HC-SR04 MODULE) ULTRASONIC DISTANCE SENSOR CODE 
   pinMode(trigPin, OUTPUT); //sets pin as OUTPUT
@@ -89,10 +97,20 @@ void setup() {
   ledcAttachPin(enable1Pin, pwmChannel);
 
   pinMode(switchButtonPin, INPUT_PULLUP);
+
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Setting AP (Access Point)…");
+  // Remove the password parameter, if you want the AP (Access Point) to be open
+  WiFi.softAP(ssid, password);
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+  
+  server.begin();
 }
 
 void loop() {
-   char message;
+/*    char message;
   // put your main code here, to run repeatedly:
   if (Serial.available()) {
     SerialBT.write(Serial.read());
@@ -100,13 +118,13 @@ void loop() {
   if (SerialBT.available()) {
     Serial.write(SerialBT.read());
   }
-  delay(20);
+  delay(20); */
 
   //read and stores the Light Resistance value, then prints it
   LDRValue = analogRead(LDRPin);
-  Serial.print("Light Resistance: "); Serial.println(LDRValue);
+  // Serial.print("Light Resistance: "); Serial.println(LDRValue);
 
-  Serial.println("\n");
+  // Serial.println("\n");
 
   // read and stores temperature and humidity value, then prints it
   int checkDht11Value = DHT11.read(DHT11PIN);
@@ -187,7 +205,7 @@ void openCurtain () {
         Serial.println("Motor stopped");
         digitalWrite(motor1Pin1, LOW);
         digitalWrite(motor1Pin2, LOW);
-        ledcWrite(pwmChannel, 0);  // Turn off PWM
+        ledcWrite(pwmChannel, 0);  // Turn off PWM  
     } else {
       // Move the DC motor forward at maximum speed
       Serial.println("Opening Curtain...");
