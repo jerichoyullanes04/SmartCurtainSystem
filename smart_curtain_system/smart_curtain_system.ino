@@ -1,13 +1,13 @@
 #include <Arduino.h>
-//#include "BluetoothSerial.h"
 #include <WiFi.h>
+#include <WiFiClient.h>
+#include <String.h>
 
 // Replace with your network credentials
-const char* ssid     = "Smart Curtain";
+const char* ssid     = "SmartCurtain";
 const char* password = "12345678";
 // Set web server port number to 80
 WiFiServer server(80);
-
 
 const int LDRPin = 32; 
 int LDRValue;
@@ -59,14 +59,14 @@ unsigned long lastDebounceTime = 0;
 bool buttonState = HIGH;
 bool lastButtonState = HIGH;
 
-//BluetoothSerial SerialBT;
-
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(921600);
-/* 
-  SerialBT.begin("Smart Curtain"); //Bluetooth device name
-  Serial.println("The device started, now you can pair it with bluetooth!"); */
+  WiFi.softAP(ssid, password); 
+  server.begin();
+  Serial.println("Access Point started");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.softAPIP());
 
   // (HC-SR04 MODULE) ULTRASONIC DISTANCE SENSOR CODE 
   pinMode(trigPin, OUTPUT); //sets pin as OUTPUT
@@ -82,10 +82,6 @@ void setup() {
 
   pinMode(LDRPin, INPUT); // Set Photoresistor analog pin as INPUT
 
-// PUSH BUTTONS
-  openButton.attachClick(openCurtainButton);
-  closeButton.attachClick(closeCurtainButton);
-
 // FOR DC MOTOR
   // sets the pins as outputs:
   pinMode(motor1Pin1, OUTPUT);
@@ -98,34 +94,87 @@ void setup() {
 
   pinMode(switchButtonPin, INPUT_PULLUP);
 
-  // Connect to Wi-Fi network with SSID and password
-  Serial.print("Setting AP (Access Point)…");
-  // Remove the password parameter, if you want the AP (Access Point) to be open
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
-  
-  server.begin();
 }
 
 void loop() {
-/*    char message;
-  // put your main code here, to run repeatedly:
-  if (Serial.available()) {
-    SerialBT.write(Serial.read());
-  }
-  if (SerialBT.available()) {
-    Serial.write(SerialBT.read());
-  }
-  delay(20); */
 
+  // ANDRID APP CONNECTION AND CONTROL
+  String all_command = "";
+  WiFiClient client = server.available();
+  if (client) {
+    String request = "";
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        request += c;
+        if (c == '\r') {
+          // End of line reached, check if next character is newline
+
+          Serial.println(request);  // full HTTP command line including GET  and HTTP 1
+
+          // Extract command from request string
+          int start = request.indexOf("GET /") + 5;
+          int end = request.indexOf("HTTP/");
+          String command = request.substring(start, end);
+
+          //Purify the command
+          command.replace("\n", "");
+          command.replace("\r", "");
+          command.replace(" ", ""); // removes all space characters
+          command.replace("\t", ""); // removes all tab characters
+          command.trim();
+
+          Serial.println(command);
+
+          all_command =  command + "curtain";
+
+          if (command.equals("open")) {
+              openCurtain();
+              // while(digitalRead(limitSwitch1) == HIGH && digitalRead(limitSwitch2) == HIGH) {
+              //   // Move the DC motor forward at maximum speed
+              //   Serial.println("Opening Curtain...");
+              //   digitalWrite(motor1Pin1, LOW);
+              //   digitalWrite(motor1Pin2, HIGH); 
+              //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
+              // }
+          }
+
+          if (command.equals("close")) {
+            closeCurtain();
+          }
+
+          if (command.equals("switch")) {
+            if (currentMode == AUTOMATIC) {
+                currentMode = MANUAL;
+                digitalWrite(manualLED, HIGH); // Turn off the LED to indicate manual mode
+                digitalWrite(automaticLED, LOW); // Turn on the LED to indicate automatic mode
+                Serial.println("Set to Manual Mode");
+            } else {
+                currentMode = AUTOMATIC;
+                digitalWrite(automaticLED, HIGH); // Turn on the LED to indicate automatic mode
+                digitalWrite(manualLED, LOW); // Turn off the LED to indicate manual mode
+                Serial.println("Set to Automatic Mode");
+            }
+          }
+
+          if (client.peek() == '\n') {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println();
+            String commandWithTags = "<html><body>" + all_command + "</body></html>";
+            client.println(commandWithTags);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // LIGHT AND TEMPERATURE SENSOR FUNCTIONS
   //read and stores the Light Resistance value, then prints it
   LDRValue = analogRead(LDRPin);
-  // Serial.print("Light Resistance: "); Serial.println(LDRValue);
-
-  // Serial.println("\n");
-
+  Serial.print("Light Resistance: "); Serial.println(LDRValue);
+  Serial.println("\n");
   // read and stores temperature and humidity value, then prints it
   int checkDht11Value = DHT11.read(DHT11PIN);
   Serial.print("Humidity (%): "); Serial.println((float)DHT11.humidity, 2);
@@ -147,7 +196,6 @@ void loop() {
           digitalWrite(automaticLED, HIGH); // Turn on the LED to indicate automatic mode
           digitalWrite(manualLED, LOW); // Turn off the LED to indicate manual mode
           Serial.println("Set to Automatic Mode");
-          
         } else {
           currentMode = MANUAL;
           // Perform your manual mode actions here
@@ -164,12 +212,25 @@ void loop() {
   // Your code for MANUAL and AUTOMATIC modes goes here
   if (currentMode == MANUAL) {
     // Code for MANUAL mode
-
-   
     if (openButton.isIdle()) {  // Handle the Open Button
       openCurtain();
-    }else if (closeButton.isIdle()) { // Handle the Close Button
-      closeCurtain();
+      // while(digitalRead(limitSwitch1) == HIGH && digitalRead(limitSwitch2) == HIGH) {
+      //   // Move the DC motor forward at maximum speed
+      //   Serial.println("Opening Curtain...");
+      //   digitalWrite(motor1Pin1, LOW);
+      //   digitalWrite(motor1Pin2, HIGH); 
+      //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
+      // }
+    }else if(closeButton.isIdle()) { // Handle the Close Button
+        closeCurtain ();
+        // distance = getDistance();
+        // while (distance > 20) {
+        //   // Move DC motor backwards at maximum speed
+        //   Serial.println("Closing Curtain...");
+        //   digitalWrite(motor1Pin1, HIGH);
+        //   digitalWrite(motor1Pin2, LOW); 
+        //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
+        // }
     }else {
       Serial.println("Motor stopped"); 
       digitalWrite(motor1Pin1, LOW);
@@ -189,14 +250,6 @@ void loop() {
       closeCurtain();
     }
   }
-}
-// MANUAL OPERATION FUNCTIONS
-void openCurtainButton () {
-  openCurtain();
-}
-
-void closeCurtainButton () {
-  closeCurtain();
 }
 // AUTOMATIC OPERATION FUNCTIONS
 void openCurtain () {
@@ -241,4 +294,5 @@ int getDistance() {
   //returns the received echo in centimeter
   return pulseIn(echoPin, HIGH)*0.034/2;
 }
+
 
