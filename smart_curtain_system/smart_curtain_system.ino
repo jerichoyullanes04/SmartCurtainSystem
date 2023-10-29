@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <WiFi.h>
+#include <WiFi.h> 
 #include <WiFiClient.h>
 #include <String.h>
 
@@ -123,6 +123,27 @@ void loop() {
           command.replace(" ", ""); // removes all space characters
           command.replace("\t", ""); // removes all tab characters
           command.trim();
+
+                  
+        while (client.connected()) {
+          // Read temperature, humidity, and light values
+          int temperature = DHT11.temperature;
+          int humidity = DHT11.humidity;
+          int lightValue = 0;
+          client.println(temperature);
+          client.println(humidity);
+          client.println(lightValue);
+
+          // Create a response message that includes the sensor data
+          String responseMessage = "Temperature: " + String(temperature) + " &deg;C<br>";
+          responseMessage += "Humidity: " + String(humidity) + " %<br>";
+          responseMessage += "Light Value: " + String(lightValue) + "<br>";
+          
+          client.print(responseMessage);
+          
+          // Update sensor data every second (adjust the interval as needed)
+          delay(1000);
+        }
 
           Serial.println(command);
 
