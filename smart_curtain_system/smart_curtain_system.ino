@@ -19,7 +19,7 @@ dht11 DHT11; // variable for dht11
 
 // DC MOTOR CODE
 // Motor A
-int motor1Pin1 = 0; 
+int motor1Pin1 = 0;  
 int motor1Pin2 = 2;
 int enable1Pin = 4; // Replace with the GPIO pin number connected to ENA
 // Setting PWM properties
@@ -52,7 +52,7 @@ OneButton closeButton(26,true);
 const int switchButtonPin = 27;
 const int manualLED = 16;   // Replace with the GPIO pin number connected to your LED
 const int automaticLED = 17;   // Replace with the GPIO pin number connected to your LED
-const unsigned long debounceDelay = 50; // Debounce delay (in milliseconds)
+const unsigned long debounceDelay = 50; // Debounce delay (in milliseconds) 
 enum Mode { MANUAL, AUTOMATIC };
 Mode currentMode = MANUAL;
 unsigned long lastDebounceTime = 0;
@@ -124,44 +124,42 @@ void loop() {
           command.replace("\t", ""); // removes all tab characters
           command.trim();
 
-                  
-        while (client.connected()) {
-          // Read temperature, humidity, and light values
-          int temperature = DHT11.temperature;
-          int humidity = DHT11.humidity;
-          int lightValue = 0;
-          client.println(temperature);
-          client.println(humidity);
-          client.println(lightValue);
-
-          // Create a response message that includes the sensor data
-          String responseMessage = "Temperature: " + String(temperature) + " &deg;C<br>";
-          responseMessage += "Humidity: " + String(humidity) + " %<br>";
-          responseMessage += "Light Value: " + String(lightValue) + "<br>";
+          // client.print(responseMessage);
+          // // Read temperature, humidity, and light values
+          // int temperature = DHT11.temperature;
+          // int humidity = DHT11.humidity;
+          // int lightValue = 0;
+          // client.println(temperature);
+          // client.println(humidity);
+          // client.println(lightValue);
+          // // Create a response message that includes the sensor data
+          // String responseMessage = "Temperature: " + String(temperature) + " &deg;C<br>";
+          // responseMessage += "Humidity: " + String(humidity) + " %<br>";
+          // responseMessage += "Light Value: " + String(lightValue) + "<br>";
           
-          client.print(responseMessage);
-          
-          // Update sensor data every second (adjust the interval as needed)
-          delay(1000);
-        }
-
           Serial.println(command);
-
           all_command =  command + "curtain";
+         
+          // ONE CLICK OPEN FUNCTION
+          // while (command.equals("open")) {
+          //     openCurtain();
+          //     if(digitalRead(limitSwitch1) == LOW && digitalRead(limitSwitch2) == LOW){
+          //       break;
+          //     }
+          // }
 
+          // // HOLD BUTTON OPEN FUNCTION
+          // if (command.equals("open")) {
+          //   openCurtain();
+          // }
+
+          // HOLD BUTTON OPEN FUNCTION
           if (command.equals("open")) {
-              openCurtain();
-              // while(digitalRead(limitSwitch1) == HIGH && digitalRead(limitSwitch2) == HIGH) {
-              //   // Move the DC motor forward at maximum speed
-              //   Serial.println("Opening Curtain...");
-              //   digitalWrite(motor1Pin1, LOW);
-              //   digitalWrite(motor1Pin2, HIGH); 
-              //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
-              // }
+            openCurtain();
           }
 
           if (command.equals("close")) {
-            closeCurtain();
+            closeCurtain();    
           }
 
           if (command.equals("switch")) {
@@ -182,7 +180,9 @@ void loop() {
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
+            
             String commandWithTags = "<html><body>" + all_command + "</body></html>";
+
             client.println(commandWithTags);
             break;
           }
@@ -233,25 +233,11 @@ void loop() {
   // Your code for MANUAL and AUTOMATIC modes goes here
   if (currentMode == MANUAL) {
     // Code for MANUAL mode
+    Serial.println("MODE: MANUAL");
     if (openButton.isIdle()) {  // Handle the Open Button
       openCurtain();
-      // while(digitalRead(limitSwitch1) == HIGH && digitalRead(limitSwitch2) == HIGH) {
-      //   // Move the DC motor forward at maximum speed
-      //   Serial.println("Opening Curtain...");
-      //   digitalWrite(motor1Pin1, LOW);
-      //   digitalWrite(motor1Pin2, HIGH); 
-      //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
-      // }
     }else if(closeButton.isIdle()) { // Handle the Close Button
-        closeCurtain ();
-        // distance = getDistance();
-        // while (distance > 20) {
-        //   // Move DC motor backwards at maximum speed
-        //   Serial.println("Closing Curtain...");
-        //   digitalWrite(motor1Pin1, HIGH);
-        //   digitalWrite(motor1Pin2, LOW); 
-        //   ledcWrite(pwmChannel, 255);  // Set duty cycle to 255 (maximum speed)
-        // }
+      closeCurtain ();
     }else {
       Serial.println("Motor stopped"); 
       digitalWrite(motor1Pin1, LOW);
@@ -264,6 +250,7 @@ void loop() {
     
   } else {
     // Code for AUTOMATIC mode
+    Serial.println("MODE: AUTOMATIC");
     int checkDht11Value = DHT11.read(DHT11PIN);
     if(LDRValue > 3000) { 
       openCurtain();
