@@ -43,15 +43,17 @@ int switchValue2;
 // PUSH BUTTON CODE
 #include "OneButton.h" // Library for single button multi function
 // Goal to achieve: Click (Full Open and Full Close), Double Click (Half Open and Half CLose ), and Long Press (Custom Open and Close) Functions
-//const int openButtonPin = 25;
-OneButton openButton(25,true);
-//const int closeButtonPin = 26; 
-OneButton closeButton(26,true); 
+const int openButtonPin = 25; // Blue Button
+//OneButton openButton(25,true);
+const int closeButtonPin = 26; // Yellow Button
+//OneButton closeButton(26,true); 
+int openButtonState = 0;
+int closeButtonState = 0;
 
 // Automatic to Manual Switch Button
-const int switchButtonPin = 27;
-const int manualLED = 16;   // Replace with the GPIO pin number connected to your LED
-const int automaticLED = 17;   // Replace with the GPIO pin number connected to your LED
+const int switchButtonPin = 27; // Red Button
+const int manualLED = 16;   // Red LED
+const int automaticLED = 17;   // Green LED
 const unsigned long debounceDelay = 50; // Debounce delay (in milliseconds) 
 enum Mode { MANUAL, AUTOMATIC };
 Mode currentMode = MANUAL;
@@ -92,6 +94,8 @@ void setup() {
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(enable1Pin, pwmChannel);
 
+  pinMode(openButtonPin, INPUT_PULLUP);
+  pinMode(closeButtonPin, INPUT_PULLUP);
   pinMode(switchButtonPin, INPUT_PULLUP);
 
 }
@@ -229,25 +233,32 @@ void loop() {
   }
   lastButtonState = reading;
 
-  /* LOOP of Manual|Automatic Switch */
+  // /* LOOP of Manual|Automatic Switch */
   // Your code for MANUAL and AUTOMATIC modes goes here
   if (currentMode == MANUAL) {
-    // Code for MANUAL mode
+      // Code for MANUAL mode
+      // read the state of the pushbutton value:
+    
+    openButtonState = digitalRead(closeButtonPin);
+    closeButtonState = digitalRead(openButtonPin);
+
+    // Serial.println("MODE: MANUAL");
+    // if (openButton.isIdle()) {  // Handle the Open Button
+    //   openCurtain();
+    // }else if(closeButton.isIdle()) { // Handle the Close Button
+    //   closeCurtain ();
+    
     Serial.println("MODE: MANUAL");
-    if (openButton.isIdle()) {  // Handle the Open Button
+    if (openButtonState == LOW) {  // Handle the Open Button
       openCurtain();
-    }else if(closeButton.isIdle()) { // Handle the Close Button
+    }else if(closeButtonState == LOW) { // Handle the Close Button
       closeCurtain ();
     }else {
       Serial.println("Motor stopped"); 
       digitalWrite(motor1Pin1, LOW);
       digitalWrite(motor1Pin2, LOW);
       ledcWrite(pwmChannel, 0);  // Turn off PWM
-    }
-
-    openButton.tick(); 
-    closeButton.tick();
-    
+    }  
   } else {
     // Code for AUTOMATIC mode
     Serial.println("MODE: AUTOMATIC");
