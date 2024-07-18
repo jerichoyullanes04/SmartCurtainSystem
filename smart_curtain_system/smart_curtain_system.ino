@@ -1,3 +1,7 @@
+// Proprietary License
+// Copyright (c) 2024 Jericho Yu Llanes. All rights reserved.
+// See the LICENSE file for more details.
+
 #include <Arduino.h>
 #include <WiFi.h> 
 #include <WiFiClient.h>
